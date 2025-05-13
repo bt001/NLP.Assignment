@@ -56,7 +56,7 @@ reconstructed1 = reconstruct_with_sbert(text1)
 reconstructed2 = reconstruct_with_sbert(text2)
 
 # Save output
-output_path = "reconstructed_texts_pipeline1_sbert_paws_extended.txt"
+output_path = "reconstructed_texts_pipeline1_sbert_paws.txt"
 with open(output_path, "w", encoding="utf-8") as f:
     f.write("Reconstructed Text 1:\n")
     f.write(reconstructed1 + "\n\n")
