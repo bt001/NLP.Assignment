@@ -1,5 +1,6 @@
 import os
 import nltk
+import re
 from nltk.tokenize import sent_tokenize
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer, util
@@ -9,34 +10,30 @@ nltk.download("punkt")
 # Load SBERT model
 model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
 
-# Load QQP dataset (subset)
-print("Loading QQP dataset...")
-qqp = load_dataset("quora", split="train[:5000]", trust_remote_code=True)
+# Load MSRPC dataset
+print("Loading MSRPC dataset...")
+msrpc = load_dataset("glue", "mrpc", split="train")
 
 # Formality filter
 def is_formal(sentence):
     return (
         sentence is not None and
-        len(sentence.split()) > 8 and
+        len(sentence.split()) > 6 and
         "'" not in sentence and
         "?" not in sentence and
         " gonna " not in sentence and
         " wanna " not in sentence
     )
 
-# Extract and filter candidates
-paraphrase_candidates = [
-    ex["questions"]["text"][1]
-    for ex in qqp
-    if ex["is_duplicate"] and is_formal(ex["questions"]["text"][1])
-]
+# Extract sentence2 from duplicate pairs
+paraphrase_candidates = [ex["sentence2"] for ex in msrpc if ex["label"] == 1 and is_formal(ex["sentence2"])]
 print(f"✓ Retained {len(paraphrase_candidates)} formal paraphrase candidates.")
 
-# Encode candidate paraphrases with SBERT
+# Encode with SBERT
 print("Encoding candidates...")
 paraphrase_embeddings = model.encode(paraphrase_candidates, convert_to_tensor=True)
 
-# Input assignment texts
+# Input texts
 text1 = """Today is our dragon boat festival, in our Chinese culture, to celebrate it with all safe and great in 
 our lives. Hope you too, to enjoy it as my deepest wishes. 
 Thank your message to show our words to  the doctor, as his next contract checking, to all of us. 
@@ -55,26 +52,39 @@ he sending again. Because I didn’t see that part final yet, or maybe I missed,
 Overall, let us make sure all are safe and celebrate the outcome with strong coffee and future 
 targets"""
 
-# SBERT reconstruction function
-def sbert_reconstruct(text, threshold=0.6):
+# Clause splitter (basic)
+def split_clauses(sentence):
+    return re.split(r",|;| and | but | or ", sentence)
+
+# SBERT clause-wise reconstruction
+def sbert_reconstruct(text, threshold=0.5):
     sentences = sent_tokenize(text)
     reconstructed = []
 
     for sent in sentences:
-        query_embedding = model.encode(sent, convert_to_tensor=True)
-        hits = util.semantic_search(query_embedding, paraphrase_embeddings, top_k=1)
-        best = hits[0][0]
-        score = best["score"]
-        idx = best["corpus_id"]
+        clauses = split_clauses(sent)
+        new_clauses = []
 
-        candidate = paraphrase_candidates[idx]
-        length_ratio = len(candidate.split()) / max(1, len(sent.split()))
-        shared_tokens = len(set(sent.lower().split()) & set(candidate.lower().split()))
+        for clause in clauses:
+            if not clause.strip():
+                continue
 
-        if score > threshold and 0.7 <= length_ratio <= 1.3 and shared_tokens >= 1:
-            reconstructed.append(candidate)
-        else:
-            reconstructed.append(sent)
+            query_embedding = model.encode(clause.strip(), convert_to_tensor=True)
+            hits = util.semantic_search(query_embedding, paraphrase_embeddings, top_k=1)
+            best = hits[0][0]
+            score = best["score"]
+            idx = best["corpus_id"]
+
+            candidate = paraphrase_candidates[idx]
+            length_ratio = len(candidate.split()) / max(1, len(clause.split()))
+            shared_tokens = len(set(clause.lower().split()) & set(candidate.lower().split()))
+
+            if score > threshold and 0.6 <= length_ratio <= 1.4 and shared_tokens >= 1:
+                new_clauses.append(candidate)
+            else:
+                new_clauses.append(clause.strip())
+
+        reconstructed.append(", ".join(new_clauses))
 
     return " ".join(reconstructed)
 
@@ -84,12 +94,12 @@ reconstructed1 = sbert_reconstruct(text1)
 reconstructed2 = sbert_reconstruct(text2)
 
 # Save output
-output_path = "reconstructed_texts_pipeline1_sbert_qqp.txt"
+output_path = "reconstructed_texts_pipeline1_sbert_msrpc_clauses.txt"
 with open(output_path, "w", encoding="utf-8") as f:
     f.write("Reconstructed Text 1:\n")
     f.write(reconstructed1 + "\n\n")
     f.write("Reconstructed Text 2:\n")
     f.write(reconstructed2 + "\n")
 
-print("✅ SBERT + QQP pipeline complete. Output saved to:")
+print("✅ SBERT + MSRPC (clause-level) pipeline complete. Output saved to:")
 print(os.path.abspath(output_path))
