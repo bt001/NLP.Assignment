@@ -2,7 +2,7 @@ sentence_id,version_label,original_text,reconstructed_text,cosine_similarity
 1,A (Custom),"Hope you too, to enjoy it as my deepest wishes.","I hope you too, to enjoy it as my deepest wishes.",0.9748
 1,B1 (SBERT),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, to enjoy it as my deepest wishes.",1.0
 1,B2 (SpaCy + GloVe),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, to enjoy it as my deepest wishes.",1.0
-1,B3 (FastText),"Hope you too, to enjoy it as my deepest wishes.",Is it bad to eat eggs everyday for breakfast,0.0021
+1,B3 (FastText),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, Is it bad to eat eggs everyday for breakfast",0.253
 2,A (Custom),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, please remind me, if the doctor still plans for the editing the acknowledgments section before he sends again.",0.9569
 2,B1 (SBERT),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.",1.0
 2,B2 (SpaCy + GloVe),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.",1.0
