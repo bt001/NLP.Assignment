@@ -100,8 +100,7 @@ Choose one of the following scripts depending on your OS:
 These scripts will:
 
 - Create a Conda environment with Python >=3.10
-- Install Poetry and project dependencies
-- Configure Hugging Face / NLTK / pip / torch caches to use `E:/`
+- Install project dependencies
 
 ## 📈 Methods & Pipelines
 
