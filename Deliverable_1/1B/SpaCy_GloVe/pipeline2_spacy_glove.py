@@ -2,11 +2,14 @@ import os
 import spacy
 import nltk
 from nltk.tokenize import sent_tokenize
+from gensim.downloader import load as gensim_load
+from scipy.spatial.distance import cosine
+import numpy as np
 
 nltk.download("punkt")
 
-# Load SpaCy model with GloVe vectors
 nlp = spacy.load("en_core_web_lg")
+glove = gensim_load("glove-wiki-gigaword-300")
 
 # Input texts
 text1 = """Today is our dragon boat festival, in our Chinese culture, to celebrate it with all safe and great in 
@@ -27,49 +30,86 @@ he sending again. Because I didn’t see that part final yet, or maybe I missed,
 Overall, let us make sure all are safe and celebrate the outcome with strong coffee and future 
 targets"""
 
-# Phrase-level replacements (automated corrections)
-phrase_replacements = {
-    "final discuss": "final discussion",
-    "bit delay": "a bit of a delay",
-    "to show me, this": "to show me this",
-    "I am very appreciated": "I greatly appreciate",
-    "before he sending again": "before he sends it again",
-    "although bit delay and less communication": "although there has been a bit of a delay and less communication",
-}
+ALLOWED_NOUN_DEPS = {"nsubj", "dobj", "pobj", "attr"}
+ALLOWED_VERB_DEPS = {"ROOT", "xcomp", "ccomp", "conj"}
 
-# Function to apply enhancements
-def spacy_reconstruct(text):
+def looks_like_verb_noun(token):
+    if token.pos_ == "NOUN" and token.dep_ in ALLOWED_NOUN_DEPS:
+        try:
+            guess = nlp(token.lemma_)[0]
+            return guess.pos_ == "VERB"
+        except Exception:
+            return False
+    return False
+
+def find_glove_alternative(word, target_pos):
+    if word not in glove:
+        return None
+    word_vec = glove[word]
+    best_word = None
+    best_score = -1
+    for cand in glove.index_to_key[:10000]:
+        if cand == word:
+            continue
+        if abs(len(cand) - len(word)) > 5:
+            continue
+        sim = 1 - cosine(word_vec, glove[cand])
+        if sim > best_score:
+            try:
+                cand_pos = nlp(cand)[0].pos_
+                if cand_pos == target_pos:
+                    best_score = sim
+                    best_word = cand
+            except:
+                continue
+    return best_word if best_score > 0.7 else None
+
+def spacy_rule_based_glove_reconstruct(text):
     sentences = sent_tokenize(text)
     reconstructed = []
+    log = []
 
-    for sent in sentences:
-        original = sent
+    for idx, sent in enumerate(sentences):
         doc = nlp(sent)
+        modified = sent
+        changed = False
 
-        # Apply phrase-level replacements
-        for bad_phrase, good_phrase in phrase_replacements.items():
-            if bad_phrase in sent:
-                sent = sent.replace(bad_phrase, good_phrase)
+        # Rule 1: Noun used where verb may be more appropriate (with dependency filtering)
+        for token in doc:
+            if looks_like_verb_noun(token):
+                alt = find_glove_alternative(token.text.lower(), token.pos_)
+                if alt and alt != token.text.lower():
+                    modified = modified.replace(token.text, alt)
+                    changed = True
 
-        # Fix low-confidence fragments
-        if len(doc) > 6 and not any(tok.dep_ == "ROOT" for tok in doc):
-            sent = f"This sentence was unclear: {original.strip()}"
+        # Rule 2: Passive structure with any past participle verb
+        for token in doc:
+            if token.pos_ == "AUX" and token.lemma_ == "be":
+                for child in token.head.subtree:
+                    if child.tag_ == "VBN" and child.pos_ == "VERB" and child.dep_ != "auxpass":
+                        alt = find_glove_alternative(child.lemma_, child.pos_)
+                        if alt and alt != child.lemma_:
+                            changed = True
 
-        reconstructed.append(sent)
+        if changed:
+            reconstructed.append(modified)
+        else:
+            reconstructed.append(sent)
 
-    return " ".join(reconstructed)
+    return " ".join(reconstructed), log
 
-# Reconstruct both texts
-reconstructed1 = spacy_reconstruct(text1)
-reconstructed2 = spacy_reconstruct(text2)
+# Process both texts
+reconstructed1, log1 = spacy_rule_based_glove_reconstruct(text1)
+reconstructed2, log2 = spacy_rule_based_glove_reconstruct(text2)
 
 # Save output
-output_path = "reconstructed_texts_pipeline2_spacy_glove_refined.txt"
+output_path = "reconstructed_texts_pipeline2_spacy_glove.txt"
 with open(output_path, "w", encoding="utf-8") as f:
     f.write("Reconstructed Text 1:\n")
     f.write(reconstructed1 + "\n\n")
     f.write("Reconstructed Text 2:\n")
-    f.write(reconstructed2 + "\n")
+    f.write(reconstructed2 + "\n\n")
 
-print("✅ Refined SpaCy + GloVe pipeline complete. Output saved to:")
+print("✅ SpaCy + GloVe rule-based repair (dependency-filtered) complete. Output saved to:")
 print(os.path.abspath(output_path))
+
