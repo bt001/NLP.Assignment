@@ -43,7 +43,6 @@ This project addresses the task of transforming semantically ambiguous or malfor
 ├── README.md
 ├── setup_conda_env.ps1
 ├── setup_conda_env.sh
-├── .env
 ├── .gitignore
 ```
 
@@ -127,7 +126,6 @@ These scripts will:
 
 - All pipelines are fully automatic.
 - Clause-level processing was used in B1 and B3 to improve granularity.
-- `.env` contains only configuration paths — no secrets.
 - Outputs are deterministic and reproducible across runs.
 
 ## 📚 References
