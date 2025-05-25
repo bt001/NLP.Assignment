@@ -77,8 +77,8 @@ This project uses **Conda** and **Poetry** for environment and dependency manage
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/nlp-assignment-2025.git
-cd nlp-assignment-2025
+git clone https://github.com/bt001/NLP.Assignment.git
+cd NLP.Assignment
 ```
 
 ### 2. Create the Environment
