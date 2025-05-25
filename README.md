@@ -23,10 +23,10 @@ This project addresses the task of transforming semantically ambiguous or malfor
 │   │   │   ├── process_and_conclusions.md
 │   │   │   └── reconstructed_texts_pipeline1_sbert_pawswiki_clauses_refined.txt
 │   │   ├── SpaCy_GloVe/
-│   │   │   ├── pipeline2_spacy_glove.py
-│   │   │   ├── process_and_conclusions.md
-│   │   │   └── reconstructed_texts_pipeline2_spacy_glove.txt
-│   │   └── install_and_setup.py
+│   │       ├── pipeline2_spacy_glove.py
+│   │       ├── process_and_conclusions.md
+│   │       └── reconstructed_texts_pipeline2_spacy_glove.txt
+│   │   
 │   └── 1C/
 ├── Deliverable_2/
 │   ├── data/
