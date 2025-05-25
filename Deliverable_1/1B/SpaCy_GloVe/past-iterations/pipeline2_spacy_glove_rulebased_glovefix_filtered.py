@@ -40,7 +40,7 @@ def looks_like_verb_noun(token):
             return False
     return False
 
-def find_glove_alternative(word):
+def find_glove_alternative(word, target_pos):
     if word not in glove:
         return None
     word_vec = glove[word]
@@ -49,10 +49,17 @@ def find_glove_alternative(word):
     for cand in glove.index_to_key[:10000]:
         if cand == word:
             continue
+        if abs(len(cand) - len(word)) > 5:
+            continue
         sim = 1 - cosine(word_vec, glove[cand])
         if sim > best_score:
-            best_score = sim
-            best_word = cand
+            try:
+                cand_pos = nlp(cand)[0].pos_
+                if cand_pos == target_pos:
+                    best_score = sim
+                    best_word = cand
+            except:
+                continue
     return best_word if best_score > 0.7 else None
 
 def spacy_rule_based_glove_reconstruct(text):
@@ -68,8 +75,9 @@ def spacy_rule_based_glove_reconstruct(text):
         # Rule 1: Noun used where verb may be more appropriate
         for token in doc:
             if looks_like_verb_noun(token):
-                alt = find_glove_alternative(token.text.lower())
+                alt = find_glove_alternative(token.text.lower(), token.pos_)
                 if alt and alt != token.text.lower():
+                    log.append(f"R1: Replaced nounified verb '{token.text}' with '{alt}' in sentence {idx+1}")
                     modified = modified.replace(token.text, alt)
                     changed = True
 
@@ -78,12 +86,13 @@ def spacy_rule_based_glove_reconstruct(text):
             if token.pos_ == "AUX" and token.lemma_ == "be":
                 for child in token.head.subtree:
                     if child.tag_ == "VBN" and child.pos_ == "VERB" and child.dep_ != "auxpass":
-                        alt = find_glove_alternative(child.lemma_)
+                        alt = find_glove_alternative(child.lemma_, child.pos_)
                         if alt and alt != child.lemma_:
+                            log.append(f"R2: Suggested alternative for passive verb '{child.text}' → '{alt}' in sentence {idx+1}")
                             changed = True
 
         if changed:
-            reconstructed.append(modified)
+            reconstructed.append(f"[MODIFIED] {modified}")
         else:
             reconstructed.append(sent)
 
@@ -94,12 +103,14 @@ reconstructed1, log1 = spacy_rule_based_glove_reconstruct(text1)
 reconstructed2, log2 = spacy_rule_based_glove_reconstruct(text2)
 
 # Save output
-output_path = "reconstructed_texts_pipeline2_spacy_glove.txt"
+output_path = "reconstructed_texts_pipeline2_spacy_glove_glovefix_filtered.txt"
 with open(output_path, "w", encoding="utf-8") as f:
     f.write("Reconstructed Text 1:\n")
     f.write(reconstructed1 + "\n\n")
     f.write("Reconstructed Text 2:\n")
     f.write(reconstructed2 + "\n\n")
+    f.write("=== CHANGE LOG ===\n")
+    f.write("\n".join(log1 + log2))
 
-print("✅ SpaCy + GloVe rule-based repair with similarity-based replacements complete. Output saved to:")
+print("✅ SpaCy + GloVe rule-based repair (POS filtered) complete. Output saved to:")
 print(os.path.abspath(output_path))

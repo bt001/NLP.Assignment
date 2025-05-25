@@ -2,14 +2,10 @@ import os
 import spacy
 import nltk
 from nltk.tokenize import sent_tokenize
-from gensim.downloader import load as gensim_load
-from scipy.spatial.distance import cosine
-import numpy as np
 
 nltk.download("punkt")
 
 nlp = spacy.load("en_core_web_lg")
-glove = gensim_load("glove-wiki-gigaword-300")
 
 # Input texts
 text1 = """Today is our dragon boat festival, in our Chinese culture, to celebrate it with all safe and great in 
@@ -30,76 +26,50 @@ he sending again. Because I didn’t see that part final yet, or maybe I missed,
 Overall, let us make sure all are safe and celebrate the outcome with strong coffee and future 
 targets"""
 
-def looks_like_verb_noun(token):
-    if token.pos_ == "NOUN":
-        try:
-            guess = nlp(token.lemma_)[0]
-            if guess.pos_ == "VERB":
-                return True
-        except Exception:
-            return False
-    return False
-
-def find_glove_alternative(word):
-    if word not in glove:
-        return None
-    word_vec = glove[word]
-    best_word = None
-    best_score = -1
-    for cand in glove.index_to_key[:10000]:
-        if cand == word:
-            continue
-        sim = 1 - cosine(word_vec, glove[cand])
-        if sim > best_score:
-            best_score = sim
-            best_word = cand
-    return best_word if best_score > 0.7 else None
-
-def spacy_rule_based_glove_reconstruct(text):
+def spacy_rule_based_reconstruct(text):
     sentences = sent_tokenize(text)
     reconstructed = []
     log = []
 
     for idx, sent in enumerate(sentences):
         doc = nlp(sent)
-        modified = sent
-        changed = False
+        flagged = False
 
-        # Rule 1: Noun used where verb may be more appropriate
+        # Rule 1: Misused verb-as-noun compounds
         for token in doc:
-            if looks_like_verb_noun(token):
-                alt = find_glove_alternative(token.text.lower())
-                if alt and alt != token.text.lower():
-                    modified = modified.replace(token.text, alt)
-                    changed = True
+            if token.pos_ == "NOUN" and token.text in {"discuss", "talk", "request"}:
+                if any(child.dep_ in {"amod", "compound", "poss"} for child in token.children):
+                    log.append(f"R1: Suspicious noun derived from verb at sentence {idx+1}: '{token.text}'")
+                    flagged = True
 
-        # Rule 2: Passive structure with any past participle verb
+        # Rule 2: Passive structure with appreciated
         for token in doc:
             if token.pos_ == "AUX" and token.lemma_ == "be":
                 for child in token.head.subtree:
-                    if child.tag_ == "VBN" and child.pos_ == "VERB" and child.dep_ != "auxpass":
-                        alt = find_glove_alternative(child.lemma_)
-                        if alt and alt != child.lemma_:
-                            changed = True
+                    if child.lemma_ == "appreciate" and child.tag_ == "VBN":
+                        log.append(f"R2: Suspect passive structure at sentence {idx+1}: '{token.text} ... {child.text}'")
+                        flagged = True
 
-        if changed:
-            reconstructed.append(modified)
+        if flagged:
+            reconstructed.append(f"[FLAGGED] {sent}")
         else:
             reconstructed.append(sent)
 
     return " ".join(reconstructed), log
 
 # Process both texts
-reconstructed1, log1 = spacy_rule_based_glove_reconstruct(text1)
-reconstructed2, log2 = spacy_rule_based_glove_reconstruct(text2)
+reconstructed1, log1 = spacy_rule_based_reconstruct(text1)
+reconstructed2, log2 = spacy_rule_based_reconstruct(text2)
 
 # Save output
-output_path = "reconstructed_texts_pipeline2_spacy_glove.txt"
+output_path = "reconstructed_texts_pipeline2_spacy_glove_rulebased_debugged.txt"
 with open(output_path, "w", encoding="utf-8") as f:
     f.write("Reconstructed Text 1:\n")
     f.write(reconstructed1 + "\n\n")
     f.write("Reconstructed Text 2:\n")
     f.write(reconstructed2 + "\n\n")
+    f.write("=== CHANGE LOG ===\n")
+    f.write("\n".join(log1 + log2))
 
-print("✅ SpaCy + GloVe rule-based repair with similarity-based replacements complete. Output saved to:")
+print("✅ Updated SpaCy rule-based pipeline with improved rules complete. Output saved to:")
 print(os.path.abspath(output_path))

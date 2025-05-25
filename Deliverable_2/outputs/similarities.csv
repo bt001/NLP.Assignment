@@ -1,0 +1,17 @@
+sentence_id,version_label,original_text,reconstructed_text,cosine_similarity
+1,A (Custom),"Hope you too, to enjoy it as my deepest wishes.","I hope you too, to enjoy it as my deepest wishes.",0.9748
+1,B1 (SBERT),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, to enjoy it as my deepest wishes.",1.0
+1,B2 (SpaCy + GloVe),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, to enjoy it as my deepest wishes.",1.0
+1,B3 (FastText),"Hope you too, to enjoy it as my deepest wishes.","Hope you too, Is it bad to eat eggs everyday for breakfast",0.253
+2,A (Custom),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, please remind me, if the doctor still plans for the editing the acknowledgments section before he sends again.",0.9569
+2,B1 (SBERT),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.",1.0
+2,B2 (SpaCy + GloVe),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.",1.0
+2,B3 (FastText),"Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.","Also, kindly remind me please, if the doctor still plan for the acknowledgments section edit before he sending again.",1.0
+3,A (Custom),"Thank your message to show our words to the doctor, as his next contract checking, to all of us.","Thank you for the message to show our words to the doctor, as his next contract review, to all of us.",0.9707
+3,B1 (SBERT),"Thank your message to show our words to the doctor, as his next contract checking, to all of us.","Thank your message to show our words to the doctor, as his next contract checking, to all of us.",1.0
+3,B2 (SpaCy + GloVe),"Thank your message to show our words to the doctor, as his next contract checking, to all of us.","Thank your message to show our words to the doctor, as his next contract checking, to all of us.",1.0
+3,B3 (FastText),"Thank your message to show our words to the doctor, as his next contract checking, to all of us.","Thank your message to show our words to the doctor, as his next contract checking, to all of us.",1.0
+4,A (Custom),We might can go tomorrow if the document gets finalized approved.,We can go tomorrow if the document gets approved.,0.9604
+4,B1 (SBERT),We might can go tomorrow if the document gets finalized approved.,We might can go tomorrow if the document gets finalized approved.,1.0
+4,B2 (SpaCy + GloVe),We might can go tomorrow if the document gets finalized approved.,We might can go tomorrow if the document gets finalized approved.,1.0
+4,B3 (FastText),We might can go tomorrow if the document gets finalized approved.,We might can go tomorrow if the document gets finalized approved.,1.0
